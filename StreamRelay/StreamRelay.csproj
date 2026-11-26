@@ -12,7 +12,14 @@
   <ItemGroup>
     <Using Remove="System.Windows.Forms" />
     <Using Remove="System.Drawing" />
-    <None Update="MediaMTX/*;relay.yml" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="relay.yml"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Condition="'$(MediaMtxDirectory)' == ''"
+          Update="MediaMTX/mediamtx.exe;MediaMTX/LICENSE"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Condition="'$(MediaMtxDirectory)' != ''"
+          Include="$(MediaMtxDirectory)/mediamtx.exe;$(MediaMtxDirectory)/LICENSE"
+          Link="MediaMTX/%(Filename)%(Extension)" CopyToPublishDirectory="Always" />
   </ItemGroup>
 
 </Project>

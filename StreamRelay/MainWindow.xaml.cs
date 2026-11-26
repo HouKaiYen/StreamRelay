@@ -233,7 +233,7 @@ public partial class MainWindow : Window
             }
             catch (Exception)
             {
-                Status.Text += " 無法儲存設定，下次啟動可能需要重新輸入。";
+                Status.Text += " 無法儲存設定，請將程式移到可寫入的資料夾。";
             }
         }
         catch (InvalidOperationException ex)

@@ -15,8 +15,7 @@ internal sealed record RelaySettings(string Ip, int Port, string Username, strin
     private const string StartupKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string StartupName = "StreamRelay";
 
-    private static readonly string SettingsPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "StreamRelay", "settings.dat");
+    private static readonly string SettingsPath = Path.Combine(AppContext.BaseDirectory, "StreamRelay.Data", "settings.dat");
 
     public string Address => FormatAddress(Ip, Port);
 

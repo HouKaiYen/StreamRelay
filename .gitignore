@@ -427,3 +427,4 @@ FodyWeavers.xsd
 
 # 本機解壓縮的 MediaMTX 發行檔
 /StreamRelay/MediaMTX/
+**/StreamRelay.Data/

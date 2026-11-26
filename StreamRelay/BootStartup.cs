@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Cryptography;
@@ -9,6 +10,8 @@ using System.Xml.Linq;
 using Microsoft.Win32;
 
 namespace StreamRelay;
+
+internal readonly record struct BootTaskStatus(bool IsEnabled, bool IsRunning, IPEndPoint? Endpoint);
 
 internal static class BootStartup
 {
@@ -21,16 +24,27 @@ internal static class BootStartup
     private const int FileNotFound = unchecked((int)0x80070002);
     private const int TaskCreateOrUpdate = 6;
     private const int TaskLogonServiceAccount = 5;
+    private const int TaskStateRunning = 4;
+    private const string EndpointDescriptionPrefix = "RTSP ";
     private const string LocalServiceSid = "S-1-5-19";
     private const string TaskPermissions = "D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GR;;;AU)";
     private static readonly string InstallDirectory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "StreamRelay Boot");
 
-    public static bool IsEnabled()
+    public static BootTaskStatus ReadStatus()
     {
         dynamic? task = GetTask(OpenTaskFolder());
-        return task is not null && (bool)task.Enabled;
+        if (task is null)
+            return default;
+
+        string description = (string?)task.Definition.RegistrationInfo.Description ?? string.Empty;
+        return new BootTaskStatus((bool)task.Enabled, (int)task.State == TaskStateRunning, ReadEndpoint(description));
     }
+
+    private static IPEndPoint? ReadEndpoint(string description)
+        => description.StartsWith(EndpointDescriptionPrefix, StringComparison.Ordinal)
+            && IPEndPoint.TryParse(description.AsSpan(EndpointDescriptionPrefix.Length), out IPEndPoint? endpoint)
+            ? endpoint : null;
 
     public static async Task SetEnabledAsync(bool enabled)
     {
@@ -125,7 +139,7 @@ internal static class BootStartup
                 File.Move(stagedExecutable, executable, overwrite: true);
                 File.Move(stagedConfig, config, overwrite: true);
                 string account = new SecurityIdentifier(LocalServiceSid).Translate(typeof(NTAccount)).Value;
-                folder.RegisterTask(TaskName, CreateTaskXml(executable, config), TaskCreateOrUpdate,
+                folder.RegisterTask(TaskName, CreateTaskXml(executable, config, settings.Address), TaskCreateOrUpdate,
                     account, null, TaskLogonServiceAccount, TaskPermissions);
             }
             catch
@@ -247,11 +261,13 @@ internal static class BootStartup
         });
     }
 
-    internal static string CreateTaskXml(string engine, string config)
+    internal static string CreateTaskXml(string engine, string config, string address)
     {
         XNamespace ns = "http://schemas.microsoft.com/windows/2004/02/mit/task";
         XElement task = new(ns + "Task",
             new XAttribute("version", "1.2"),
+            new XElement(ns + "RegistrationInfo",
+                new XElement(ns + "Description", EndpointDescriptionPrefix + address)),
             new XElement(ns + "Triggers",
                 new XElement(ns + "BootTrigger", new XElement(ns + "Delay", "PT30S"))),
             new XElement(ns + "Principals",

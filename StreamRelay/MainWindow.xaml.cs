@@ -1,8 +1,10 @@
 using System.ComponentModel;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using Forms = System.Windows.Forms;
 
 namespace StreamRelay;
@@ -13,8 +15,13 @@ public partial class MainWindow : Window
 
     private readonly List<StreamRow> _rows = [];
     private readonly Forms.NotifyIcon _tray;
+    private readonly Forms.ToolStripLabel _trayEndpoint = new();
+    private readonly Forms.ToolStripLabel _trayStatus = new();
+    private readonly DispatcherTimer _trayRefresh = new() { Interval = TimeSpan.FromSeconds(4) };
     private RelayServer? _server;
+    private BootTaskStatus _bootTaskStatus;
     private bool _isStarting;
+    private bool _hasRelayError;
     private bool _isExiting;
     private bool _isBootEnabled;
     private bool _isChangingBootStartup;
@@ -26,6 +33,8 @@ public partial class MainWindow : Window
         UsernameBox.Text = RelaySettings.DefaultCredential;
         PasswordBox.Password = RelaySettings.DefaultCredential;
         Forms.ContextMenuStrip menu = new();
+        menu.Items.AddRange([_trayEndpoint, _trayStatus, new Forms.ToolStripSeparator()]);
+        menu.Opening += (_, _) => RefreshBootStartup();
         menu.Items.Add("開啟 StreamRelay", null, (_, _) => ShowFromTray());
         menu.Items.Add("結束 StreamRelay", null, (_, _) =>
         {
@@ -63,11 +72,14 @@ public partial class MainWindow : Window
 
         RefreshBootStartup();
         Activated += (_, _) => RefreshBootStartup();
+        _trayRefresh.Tick += (_, _) => RefreshBootStartup();
+        _trayRefresh.Start();
     }
 
     internal void ReleaseResources()
     {
         _isExiting = true;
+        _trayRefresh.Stop();
         _server?.Dispose();
         _tray.Visible = false;
         _tray.ContextMenuStrip?.Dispose();
@@ -141,7 +153,8 @@ public partial class MainWindow : Window
 
         try
         {
-            bool enabled = BootStartup.IsEnabled();
+            _bootTaskStatus = BootStartup.ReadStatus();
+            bool enabled = _bootTaskStatus.IsEnabled;
             if (enabled != _isBootEnabled && _server is null)
                 Status.Text = enabled ? "已啟用開機排程，轉發由工作排程器管理。" : "開機排程已停用。";
             _isBootEnabled = enabled;
@@ -213,7 +226,11 @@ public partial class MainWindow : Window
         return row;
     }
 
-    private void OnEndpointChanged(object sender, RoutedEventArgs e) => RefreshLinks();
+    private void OnEndpointChanged(object sender, RoutedEventArgs e)
+    {
+        RefreshLinks();
+        RefreshTrayStatus();
+    }
 
     private RelaySettings ReadSettings()
     {
@@ -254,12 +271,13 @@ public partial class MainWindow : Window
         RelayServer server = new();
         _server = server;
         _isStarting = true;
+        _hasRelayError = false;
         UpdateControls();
         Status.Text = "正在啟動 MediaMTX…";
         server.Exited += (_, _) => Dispatcher.InvokeAsync(() =>
         {
             if (!_isStarting && ReferenceEquals(_server, server))
-                StopRelay("MediaMTX 已結束，可重新啟動轉發。");
+                StopRelay("MediaMTX 已結束，可重新啟動轉發。", hasError: true);
         });
 
         try
@@ -282,15 +300,15 @@ public partial class MainWindow : Window
         }
         catch (InvalidOperationException ex)
         {
-            StopRelay(ex.Message);
+            StopRelay(ex.Message, hasError: true);
         }
         catch (TimeoutException)
         {
-            StopRelay("等待 MediaMTX 啟動逾時。");
+            StopRelay("等待 MediaMTX 啟動逾時。", hasError: true);
         }
         catch (Exception)
         {
-            StopRelay("無法啟動 MediaMTX，請確認程式檔案及本機設定。");
+            StopRelay("無法啟動 MediaMTX，請確認程式檔案及本機設定。", hasError: true);
         }
         finally
         {
@@ -301,10 +319,11 @@ public partial class MainWindow : Window
 
     private void OnStopClick(object sender, RoutedEventArgs e) => StopRelay("轉發已停止。");
 
-    private void StopRelay(string message)
+    private void StopRelay(string message, bool hasError = false)
     {
         RelayServer? server = _server;
         _server = null;
+        _hasRelayError = hasError;
         server?.Dispose();
         Status.Text = message;
         UpdateControls();
@@ -322,6 +341,64 @@ public partial class MainWindow : Window
         {
             row.Source.IsReadOnly = !canEdit;
             row.Remove.IsEnabled = canEdit;
+        }
+
+        RefreshTrayStatus();
+    }
+
+    private void RefreshTrayStatus()
+    {
+        if (_tray is null || _isExiting)
+            return;
+
+        string address = "未設定";
+        if (IPAddress.TryParse(IpBox.Text.Trim(), out IPAddress? ip)
+            && int.TryParse(PortBox.Text, out int port) && port is >= 1 and <= 65535)
+        {
+            address = RelaySettings.FormatAddress(ip.ToString(), port);
+        }
+
+        bool isBootManaged = _server is null && (_isBootEnabled || _bootTaskStatus.IsRunning);
+        string addressLabel = "轉發端點";
+        string status;
+        if (isBootManaged)
+        {
+            IPEndPoint? endpoint = _bootTaskStatus.Endpoint;
+            addressLabel = endpoint is null ? "本機設定端點" : addressLabel;
+            address = endpoint?.ToString() ?? address;
+            status = GetBootTrayStatus(endpoint);
+        }
+        else if (_server is not null)
+        {
+            status = _isStarting ? "啟動中" : "轉發中";
+        }
+        else
+        {
+            status = _hasRelayError ? "轉發失敗" : "已停止";
+        }
+
+        _trayEndpoint.Text = $"{addressLabel} {address}";
+        _trayStatus.Text = $"轉發狀態 {status}";
+        _tray.Text = $"StreamRelay {status}\n{address}";
+    }
+
+    private string GetBootTrayStatus(IPEndPoint? endpoint)
+    {
+        if (!_canReadBootTask)
+            return "排程狀態未知";
+        if (!_bootTaskStatus.IsRunning)
+            return "開機排程未執行";
+        if (endpoint is null)
+            return "開機排程執行中";
+
+        try
+        {
+            return IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners().Contains(endpoint)
+                ? "轉發中（開機）" : "等待監聽";
+        }
+        catch (NetworkInformationException)
+        {
+            return "開機排程執行中";
         }
     }
 }

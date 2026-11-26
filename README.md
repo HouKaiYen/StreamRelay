@@ -32,3 +32,7 @@ Windows WPF RTSP 轉發工具。多路來源共用一組本機 IP、TCP 連接�
 - 執行 `./Publish-Portable.ps1` 可製作可攜版 ZIP。腳本會下載並核對指定版本的官方 MediaMTX，預設輸出至 `artifacts/StreamRelay-Portable-win-x64.zip`。
 
 轉發連結包含播放帳密，請只分享給需要播放的人。
+
+## 第三方授權
+
+可攜版 ZIP 的 `MediaMTX/LICENSE` 保留官方 MIT 授權。MediaMTX Windows x64 執行檔所含的 Go 模組、Go 執行階段及 hls.js 授權與聲明收錄於 [MediaMTX v1.21.4 第三方授權](Licenses/MediaMTX-v1.21.4-windows-amd64.txt)，發行包也附有 .NET 的授權與聲明。

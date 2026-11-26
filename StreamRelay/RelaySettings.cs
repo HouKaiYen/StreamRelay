@@ -14,7 +14,7 @@ internal sealed record RelaySettings(string Ip, int Port, string Username, strin
 {
     public const string DefaultCredential = "admin";
 
-    private static readonly string SettingsPath = Path.Combine(AppContext.BaseDirectory, "StreamRelay.Data", "settings.dat");
+    public static string SettingsPath { get; } = Path.Combine(AppContext.BaseDirectory, "StreamRelay.Data", "settings.dat");
 
     public string Address => FormatAddress(Ip, Port);
 

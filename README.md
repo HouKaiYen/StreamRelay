@@ -12,6 +12,8 @@ Windows WPF RTSP 轉發工具。多路來源共用一組本機 IP、TCP 連接�
 
 成功啟動轉發時，程式會將設定與每路固定路徑加密儲存在程式資料夾內的 `StreamRelay.Data/settings.dat`。在同一台電腦以同一個 Windows 帳戶使用時，可連同設定一起移動資料夾。換電腦或 Windows 帳戶時須重新輸入設定。
 
+主視窗下方會顯示可攜版與開機轉發設定檔的完整位置，可選取路徑並複製。
+
 ## Windows 開機自啟動
 
 填好來源並停止手動轉發後，勾選「Windows 開機自啟動」，再以目前的 Windows 管理員帳戶通過 UAC 授權。程式會將 MediaMTX 安裝至 `%ProgramFiles%\StreamRelay Boot`，並註冊 `StreamRelay` 排程。

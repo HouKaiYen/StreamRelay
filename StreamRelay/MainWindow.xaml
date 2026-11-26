@@ -31,7 +31,7 @@
         </Grid.RowDefinitions>
 
         <DockPanel Margin="0,0,0,18">
-            <CheckBox x:Name="StartupBox" DockPanel.Dock="Right" Content="Windows 登入時自動啟動"
+            <CheckBox x:Name="StartupBox" DockPanel.Dock="Right" Content="Windows 開機自啟動"
                       VerticalAlignment="Center" Click="OnStartupClick" />
             <TextBlock Text="RTSP 轉發" FontSize="28" FontWeight="SemiBold" />
         </DockPanel>

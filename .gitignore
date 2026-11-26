@@ -424,3 +424,6 @@ FodyWeavers.xsd
 
 # Official VS Code C# Dev Kit Extension exclusion
 #*.lscache
+
+# 本機解壓縮的 MediaMTX 發行檔
+/StreamRelay/MediaMTX/

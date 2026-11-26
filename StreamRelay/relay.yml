@@ -1,0 +1,13 @@
+rtsp: true
+rtspTransports: [tcp]
+rtmp: false
+hls: false
+webrtc: false
+srt: false
+moq: false
+authInternalUsers:
+  - user: relay
+    permissions:
+      - action: read
+pathDefaults:
+  sourceOnDemand: true

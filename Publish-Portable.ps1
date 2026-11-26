@@ -6,7 +6,13 @@ param(
 $ErrorActionPreference = 'Stop'
 $mediaMtxVersion = 'v1.21.4'
 $mediaMtxFile = "mediamtx_${mediaMtxVersion}_windows_amd64.zip"
+$mediaMtxNotices = "MediaMTX-${mediaMtxVersion}-windows-amd64.txt"
+$noticePath = Join-Path $PSScriptRoot "Licenses/$mediaMtxNotices"
 $expectedHash = '835645b2700ffce4d2b6cb04bfa0aadce95335da6dfc0d7c2114e6da585734f8'
+if (!(Test-Path -LiteralPath $noticePath -PathType Leaf)) {
+    throw "Missing third-party notices for MediaMTX $mediaMtxVersion (Windows x64)."
+}
+
 $output = (New-Item -ItemType Directory -Path $OutputDirectory -Force).FullName
 $work = (New-Item -ItemType Directory -Path (Join-Path $output ('publish-' + [Guid]::NewGuid().ToString('N')))).FullName
 
@@ -32,11 +38,13 @@ try {
     }
 
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'README.md') -Destination $package
+    Copy-Item -LiteralPath $noticePath -Destination (Join-Path $package "Licenses/$mediaMtxNotices")
     $requiredFiles = @(
         'StreamRelay.exe'
         'relay.yml'
         'MediaMTX/mediamtx.exe'
         'MediaMTX/LICENSE'
+        "Licenses/$mediaMtxNotices"
         'Licenses/dotnet-runtime-license.txt'
         'Licenses/dotnet-runtime-third-party-notices.txt'
         'Licenses/dotnet-windows-desktop-license.txt'

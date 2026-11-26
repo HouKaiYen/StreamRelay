@@ -1,7 +1,5 @@
 using System.Diagnostics;
 using System.IO;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace StreamRelay;
 
@@ -31,8 +29,8 @@ internal sealed class RelayServer : IDisposable
 
         // 轉發帳密以雜湊交給 MediaMTX，來源連結只放在子程序的環境變數。
         startInfo.Environment["MTX_RTSPADDRESS"] = settings.Address;
-        startInfo.Environment["MTX_AUTHINTERNALUSERS_0_USER"] = HashCredential(settings.Username);
-        startInfo.Environment["MTX_AUTHINTERNALUSERS_0_PASS"] = HashCredential(settings.Password);
+        startInfo.Environment["MTX_AUTHINTERNALUSERS_0_USER"] = RelaySettings.HashCredential(settings.Username);
+        startInfo.Environment["MTX_AUTHINTERNALUSERS_0_PASS"] = RelaySettings.HashCredential(settings.Password);
         foreach (RelayStream stream in settings.Streams)
             startInfo.Environment[$"MTX_PATHS_{stream.Path.ToUpperInvariant()}_SOURCE"] = stream.Source;
 
@@ -68,9 +66,6 @@ internal sealed class RelayServer : IDisposable
             throw;
         }
     }
-
-    private static string HashCredential(string value)
-        => "sha256:" + Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
 
     public void Dispose()
     {

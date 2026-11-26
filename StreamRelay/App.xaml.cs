@@ -10,22 +10,30 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        if (e.Args is [BootStartup.EnableArgument] or [BootStartup.DisableArgument])
+        {
+            Shutdown(BootStartup.RunElevated(e.Args[0] == BootStartup.EnableArgument));
+            return;
+        }
+
+        BootStartup.RemoveLegacyLoginEntry();
+        if (e.Args is ["--startup"])
+        {
+            Shutdown();
+            return;
+        }
+
         _instance = new Mutex(false, @"Local\StreamRelay", out bool isFirstInstance);
-        bool startsAtLogin = e.Args.Contains("--startup");
         if (!isFirstInstance)
         {
-            if (!startsAtLogin)
-                MessageBox.Show("StreamRelay 已在執行，可從 Windows 系統匣開啟。", "StreamRelay");
+            MessageBox.Show("StreamRelay 已在執行，可從 Windows 系統匣開啟。", "StreamRelay");
             Shutdown();
             return;
         }
 
         MainWindow window = new();
         MainWindow = window;
-        if (startsAtLogin)
-            window.StartFromLogin();
-        else
-            window.Show();
+        window.Show();
     }
 
     protected override void OnExit(ExitEventArgs e)

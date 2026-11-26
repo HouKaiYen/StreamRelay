@@ -3,8 +3,8 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
-using Microsoft.Win32;
 
 namespace StreamRelay;
 
@@ -12,8 +12,7 @@ internal sealed record RelayStream(string Path, string Source);
 
 internal sealed record RelaySettings(string Ip, int Port, string Username, string Password, RelayStream[] Streams)
 {
-    private const string StartupKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string StartupName = "StreamRelay";
+    public const string DefaultCredential = "admin";
 
     private static readonly string SettingsPath = Path.Combine(AppContext.BaseDirectory, "StreamRelay.Data", "settings.dat");
 
@@ -29,6 +28,9 @@ internal sealed record RelaySettings(string Ip, int Port, string Username, strin
 
     private static bool IsValidCredential(string value)
         => !string.IsNullOrWhiteSpace(value) && !value.Contains(':') && !value.Any(char.IsControl);
+
+    public static string HashCredential(string value)
+        => "sha256:" + Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
 
     public void Validate()
     {
@@ -91,22 +93,4 @@ internal sealed record RelaySettings(string Ip, int Port, string Username, strin
         File.WriteAllBytes(tempPath, contents);
         File.Move(tempPath, SettingsPath, overwrite: true);
     }
-
-    public static bool HasLoginStartup()
-    {
-        using RegistryKey? key = Registry.CurrentUser.OpenSubKey(StartupKey);
-        return key?.GetValue(StartupName) is string command
-            && string.Equals(command, GetStartupCommand(), StringComparison.OrdinalIgnoreCase);
-    }
-
-    public static void SetLoginStartup(bool enabled)
-    {
-        using RegistryKey key = Registry.CurrentUser.CreateSubKey(StartupKey);
-        if (enabled)
-            key.SetValue(StartupName, GetStartupCommand());
-        else
-            key.DeleteValue(StartupName, throwOnMissingValue: false);
-    }
-
-    private static string GetStartupCommand() => $"\"{Environment.ProcessPath}\" --startup";
 }

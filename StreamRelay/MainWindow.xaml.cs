@@ -16,10 +16,15 @@ public partial class MainWindow : Window
     private RelayServer? _server;
     private bool _isStarting;
     private bool _isExiting;
+    private bool _isBootEnabled;
+    private bool _isChangingBootStartup;
+    private bool _canReadBootTask;
 
     public MainWindow()
     {
         InitializeComponent();
+        UsernameBox.Text = RelaySettings.DefaultCredential;
+        PasswordBox.Password = RelaySettings.DefaultCredential;
         Forms.ContextMenuStrip menu = new();
         menu.Items.Add("開啟 StreamRelay", null, (_, _) => ShowFromTray());
         menu.Items.Add("結束 StreamRelay", null, (_, _) =>
@@ -38,7 +43,6 @@ public partial class MainWindow : Window
 
         try
         {
-            StartupBox.IsChecked = RelaySettings.HasLoginStartup();
             if (RelaySettings.Load() is RelaySettings settings)
             {
                 IpBox.Text = settings.Ip;
@@ -56,15 +60,9 @@ public partial class MainWindow : Window
 
         if (_rows.Count == 0)
             AddRow();
-    }
 
-    internal async void StartFromLogin()
-    {
-        if (_rows.Exists(row => !string.IsNullOrWhiteSpace(row.Source.Text)))
-            await StartRelayAsync();
-
-        if (_server is null && !_isExiting)
-            ShowFromTray();
+        RefreshBootStartup();
+        Activated += (_, _) => RefreshBootStartup();
     }
 
     internal void ReleaseResources()
@@ -98,19 +96,64 @@ public partial class MainWindow : Window
         Hide();
     }
 
-    private void OnStartupClick(object sender, RoutedEventArgs e)
+    private async void OnStartupClick(object sender, RoutedEventArgs e)
     {
         bool enabled = StartupBox.IsChecked == true;
+        _isChangingBootStartup = true;
+        UpdateControls();
         try
         {
-            RelaySettings.SetLoginStartup(enabled);
-            Status.Text = enabled ? "已啟用登入時自動啟動。" : "已停用登入時自動啟動。";
+            if (enabled)
+            {
+                RelaySettings settings = ReadSettings();
+                settings.Validate();
+                settings.Save();
+            }
+
+            await BootStartup.SetEnabledAsync(enabled);
+            _isBootEnabled = enabled;
+            Status.Text = enabled ? "已建立開機排程，下次開機時會自動轉發。" : "已停用開機自啟動。";
+        }
+        catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
+        {
+            Status.Text = "已取消管理員授權。";
+        }
+        catch (InvalidOperationException ex)
+        {
+            Status.Text = ex.Message;
         }
         catch (Exception)
         {
-            StartupBox.IsChecked = !enabled;
-            Status.Text = "無法更新 Windows 自動啟動設定。";
+            Status.Text = "無法更新開機自啟動，請確認程式資料夾可寫入，且工作排程器可用。";
         }
+        finally
+        {
+            _isChangingBootStartup = false;
+            StartupBox.IsChecked = _isBootEnabled;
+            RefreshBootStartup();
+        }
+    }
+
+    private void RefreshBootStartup()
+    {
+        if (_isChangingBootStartup || _isExiting)
+            return;
+
+        try
+        {
+            bool enabled = BootStartup.IsEnabled();
+            if (enabled != _isBootEnabled && _server is null)
+                Status.Text = enabled ? "已啟用開機排程，轉發由工作排程器管理。" : "開機排程已停用。";
+            _isBootEnabled = enabled;
+            _canReadBootTask = true;
+        }
+        catch (Exception)
+        {
+            _canReadBootTask = false;
+        }
+
+        StartupBox.IsChecked = _isBootEnabled;
+        UpdateControls();
     }
 
     private void OnAddClick(object sender, RoutedEventArgs e) => AddRow().Source.Focus();
@@ -204,7 +247,8 @@ public partial class MainWindow : Window
 
     private async Task StartRelayAsync()
     {
-        if (_server is not null)
+        RefreshBootStartup();
+        if (_server is not null || _isBootEnabled || _isChangingBootStartup)
             return;
 
         RelayServer server = new();
@@ -268,10 +312,11 @@ public partial class MainWindow : Window
 
     private void UpdateControls()
     {
-        bool canEdit = _server is null;
+        bool canEdit = _server is null && !_isBootEnabled && !_isChangingBootStartup;
         EndpointPanel.IsEnabled = canEdit;
         AddButton.IsEnabled = canEdit;
         StartButton.IsEnabled = canEdit;
+        StartupBox.IsEnabled = _canReadBootTask && _server is null && !_isChangingBootStartup;
         StopButton.IsEnabled = _server is not null && !_isStarting;
         foreach (StreamRow row in _rows)
         {

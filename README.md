@@ -4,7 +4,7 @@ Windows WPF RTSP 轉發工具。多路來源共用一組本機 IP、TCP 連接�
 
 ## 使用方式
 
-1. 將 Windows x64 可攜版解壓縮到可寫入的資料夾，再開啟 `StreamRelay.exe`。發行包已包含 MediaMTX 和 .NET 執行階段。
+1. 從 [GitHub Releases](https://github.com/HouKaiYen/StreamRelay/releases/latest) 下載 Windows x64 可攜版，解壓縮到可寫入的資料夾後開啟 `StreamRelay.exe`。發行包已包含 MediaMTX 和 .NET 執行階段。
 2. 輸入本機 IP、連接埠、轉發帳號及密碼。全新設定的帳號與密碼皆為 `admin`，可自行修改。轉發帳密皆不可包含冒號。只在這台電腦播放可用 `127.0.0.1:8554`。區域網路播放時，請輸入這台電腦的區網 IP，並允許 Windows 防火牆的該 TCP 連接埠。
 3. 在左欄填入完整的來源 RTSP 連結。來源需要帳密時，請將來源帳密包含在網址中。
 4. 按「啟動轉發」，再複製右欄連結到播放器。播放器請使用 RTSP over TCP。有播放器連線時，才會拉取對應的來源。

@@ -32,7 +32,16 @@ try {
     }
 
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'README.md') -Destination $package
-    foreach ($file in 'StreamRelay.exe', 'relay.yml', 'MediaMTX/mediamtx.exe', 'MediaMTX/LICENSE') {
+    $requiredFiles = @(
+        'StreamRelay.exe'
+        'relay.yml'
+        'MediaMTX/mediamtx.exe'
+        'MediaMTX/LICENSE'
+        'Licenses/dotnet-runtime-license.txt'
+        'Licenses/dotnet-runtime-third-party-notices.txt'
+        'Licenses/dotnet-windows-desktop-license.txt'
+    )
+    foreach ($file in $requiredFiles) {
         if (!(Test-Path -LiteralPath (Join-Path $package $file) -PathType Leaf)) {
             throw "Missing portable package file: $file"
         }

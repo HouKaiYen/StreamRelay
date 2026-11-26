@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
+    <Version>1.0.0</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
@@ -21,5 +22,21 @@
           Include="$(MediaMtxDirectory)/mediamtx.exe;$(MediaMtxDirectory)/LICENSE"
           Link="MediaMTX/%(Filename)%(Extension)" CopyToPublishDirectory="Always" />
   </ItemGroup>
+
+  <Target Name="CopyRuntimeNotices" AfterTargets="Publish" Condition="'$(SelfContained)' == 'true'">
+    <ItemGroup>
+      <RuntimeNotice Include="%(ResolvedRuntimePack.PackageDirectory)/LICENSE.TXT"
+                     Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App'"
+                     TargetPath="dotnet-runtime-license.txt" />
+      <RuntimeNotice Include="%(ResolvedRuntimePack.PackageDirectory)/THIRD-PARTY-NOTICES.TXT"
+                     Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App'"
+                     TargetPath="dotnet-runtime-third-party-notices.txt" />
+      <RuntimeNotice Include="%(ResolvedRuntimePack.PackageDirectory)/LICENSE"
+                     Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.WindowsDesktop.App'"
+                     TargetPath="dotnet-windows-desktop-license.txt" />
+    </ItemGroup>
+    <Copy SourceFiles="@(RuntimeNotice)"
+          DestinationFiles="@(RuntimeNotice->'$(PublishDir)Licenses/%(TargetPath)')" />
+  </Target>
 
 </Project>

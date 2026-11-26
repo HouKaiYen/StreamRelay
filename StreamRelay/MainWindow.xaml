@@ -1,0 +1,94 @@
+﻿<Window x:Class="StreamRelay.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="StreamRelay" Width="1040" Height="650" MinWidth="800" MinHeight="490"
+        WindowStartupLocation="CenterScreen" Background="#F3F6FA" Foreground="#182844"
+        FontFamily="Segoe UI, Microsoft JhengHei UI" FontSize="14"
+        StateChanged="OnStateChanged" Closing="OnClosing" UseLayoutRounding="True">
+    <Window.Resources>
+        <Style TargetType="Label">
+            <Setter Property="Padding" Value="0,0,0,6" />
+            <Setter Property="Foreground" Value="#394A64" />
+        </Style>
+        <Style x:Key="Field" TargetType="Control">
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style TargetType="TextBox" BasedOn="{StaticResource Field}" />
+        <Style TargetType="PasswordBox" BasedOn="{StaticResource Field}" />
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="MinHeight" Value="34" />
+        </Style>
+    </Window.Resources>
+    <Grid Margin="26">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <DockPanel Margin="0,0,0,18">
+            <CheckBox x:Name="StartupBox" DockPanel.Dock="Right" Content="Windows 登入時自動啟動"
+                      VerticalAlignment="Center" Click="OnStartupClick" />
+            <TextBlock Text="RTSP 轉發" FontSize="28" FontWeight="SemiBold" />
+        </DockPanel>
+
+        <Border Grid.Row="1" CornerRadius="9" Background="White" BorderBrush="#D6DFEB" BorderThickness="1"
+                Padding="16" Margin="0,0,0,16">
+            <Grid x:Name="EndpointPanel">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="118" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Margin="0,0,12,0">
+                    <Label Content="本機 IP" Target="{Binding ElementName=IpBox}" />
+                    <TextBox x:Name="IpBox" Text="127.0.0.1" TextChanged="OnEndpointChanged" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                    <Label Content="連接埠" Target="{Binding ElementName=PortBox}" />
+                    <TextBox x:Name="PortBox" Text="8554" TextChanged="OnEndpointChanged" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Margin="0,0,12,0">
+                    <Label Content="轉發帳號" Target="{Binding ElementName=UsernameBox}" />
+                    <TextBox x:Name="UsernameBox" TextChanged="OnEndpointChanged" />
+                </StackPanel>
+                <StackPanel Grid.Column="3">
+                    <Label Content="轉發密碼" Target="{Binding ElementName=PasswordBox}" />
+                    <PasswordBox x:Name="PasswordBox" PasswordChanged="OnEndpointChanged" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="2" CornerRadius="9" Background="White" BorderBrush="#D6DFEB" BorderThickness="1" Padding="16">
+            <DockPanel>
+                <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="來源 RTSP 完整連結" FontWeight="SemiBold" />
+                    <TextBlock Grid.Column="1" Text="轉發 RTSP 完整連結" FontWeight="SemiBold" Margin="6,0,0,0" />
+                </Grid>
+                <Button x:Name="AddButton" DockPanel.Dock="Bottom" HorizontalAlignment="Left" Content="新增來源"
+                        Click="OnAddClick" Margin="0,8,0,0" />
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel x:Name="RowsPanel" />
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <DockPanel Grid.Row="3" Margin="0,16,0,0">
+            <Button x:Name="StartButton" DockPanel.Dock="Right" Content="啟動轉發" Width="112"
+                    Click="OnStartClick" FontWeight="SemiBold" />
+            <Button x:Name="StopButton" DockPanel.Dock="Right" Content="停止轉發" Width="112"
+                    Margin="0,0,8,0" Click="OnStopClick" IsEnabled="False" />
+            <TextBlock x:Name="Status" Text="尚未啟動" VerticalAlignment="Center" TextWrapping="Wrap"
+                       AutomationProperties.LiveSetting="Polite" Margin="0,0,10,0" />
+        </DockPanel>
+    </Grid>
+</Window>

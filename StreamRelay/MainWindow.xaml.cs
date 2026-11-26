@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.IO;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Windows;
@@ -15,6 +16,7 @@ public partial class MainWindow : Window
 
     private readonly List<StreamRow> _rows = [];
     private readonly Forms.NotifyIcon _tray;
+    private readonly System.Drawing.Icon _trayIcon;
     private readonly Forms.ToolStripLabel _trayEndpoint = new();
     private readonly Forms.ToolStripLabel _trayStatus = new();
     private readonly DispatcherTimer _trayRefresh = new() { Interval = TimeSpan.FromSeconds(4) };
@@ -43,9 +45,13 @@ public partial class MainWindow : Window
             _isExiting = true;
             Application.Current.Shutdown();
         });
+        using Stream iconStream = Application.GetResourceStream(
+            new Uri("/StreamRelay;component/Assets/StreamRelay.ico", UriKind.Relative)).Stream;
+        using System.Drawing.Icon resourceIcon = new(iconStream, Forms.SystemInformation.SmallIconSize);
+        _trayIcon = (System.Drawing.Icon)resourceIcon.Clone();
         _tray = new Forms.NotifyIcon
         {
-            Icon = System.Drawing.SystemIcons.Application,
+            Icon = _trayIcon,
             Text = "StreamRelay",
             ContextMenuStrip = menu,
             Visible = true,
@@ -86,6 +92,7 @@ public partial class MainWindow : Window
         _tray.Visible = false;
         _tray.ContextMenuStrip?.Dispose();
         _tray.Dispose();
+        _trayIcon.Dispose();
     }
 
     private void ShowFromTray()

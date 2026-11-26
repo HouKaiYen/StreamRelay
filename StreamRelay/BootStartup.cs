@@ -30,6 +30,7 @@ internal static class BootStartup
     private const string TaskPermissions = "D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GR;;;AU)";
     private static readonly string InstallDirectory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "StreamRelay Boot");
+    public static string ConfigurationPath { get; } = Path.Combine(InstallDirectory, "relay.yml");
 
     public static BootTaskStatus ReadStatus()
     {
@@ -112,7 +113,7 @@ internal static class BootStartup
         DirectoryInfo directory = new(InstallDirectory);
         EnsureProtectedDirectory(directory);
         string executable = Path.Combine(directory.FullName, "mediamtx.exe");
-        string config = Path.Combine(directory.FullName, "relay.yml");
+        string config = ConfigurationPath;
         string stagedExecutable = Path.Combine(directory.FullName, Guid.NewGuid().ToString("N") + ".tmp");
         string stagedConfig = Path.Combine(directory.FullName, Guid.NewGuid().ToString("N") + ".tmp");
         try
@@ -172,7 +173,7 @@ internal static class BootStartup
         if (directory.Exists)
         {
             RejectReparsePoint(directory);
-            File.Delete(Path.Combine(directory.FullName, "relay.yml"));
+            File.Delete(ConfigurationPath);
             File.Delete(Path.Combine(directory.FullName, "mediamtx.exe"));
             if (!directory.EnumerateFileSystemInfos().Any())
                 directory.Delete();

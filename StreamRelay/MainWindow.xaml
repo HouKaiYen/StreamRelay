@@ -1,7 +1,7 @@
 ﻿<Window x:Class="StreamRelay.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="StreamRelay" Width="1040" Height="650" MinWidth="800" MinHeight="490"
+        Title="StreamRelay" Width="1040" Height="650" MinWidth="800" MinHeight="520"
         WindowStartupLocation="CenterScreen" Background="#F3F6FA" Foreground="#182844"
         FontFamily="Segoe UI, Microsoft JhengHei UI" FontSize="14"
         StateChanged="OnStateChanged" Closing="OnClosing" UseLayoutRounding="True">
@@ -27,6 +27,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
@@ -90,5 +91,34 @@
             <TextBlock x:Name="Status" Text="尚未啟動" VerticalAlignment="Center" TextWrapping="Wrap"
                        AutomationProperties.LiveSetting="Polite" Margin="0,0,10,0" />
         </DockPanel>
+
+        <Grid Grid.Row="4" Margin="0,14,0,0">
+            <Grid.Resources>
+                <Style TargetType="Label" BasedOn="{StaticResource {x:Type Label}}">
+                    <Setter Property="VerticalAlignment" Value="Center" />
+                    <Setter Property="Padding" Value="0,0,12,0" />
+                </Style>
+                <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                    <Setter Property="IsReadOnly" Value="True" />
+                    <Setter Property="MinHeight" Value="26" />
+                    <Setter Property="Padding" Value="6,2" />
+                    <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="BorderBrush" Value="#D6DFEB" />
+                </Style>
+            </Grid.Resources>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Label Content="可攜版設定檔" Target="{Binding ElementName=PortableSettingsPathBox}" />
+            <TextBox x:Name="PortableSettingsPathBox" Grid.Column="1" Margin="0,0,0,4" />
+            <Label Grid.Row="1" Content="開機轉發設定檔（啟用時）" Target="{Binding ElementName=BootSettingsPathBox}" />
+            <TextBox x:Name="BootSettingsPathBox" Grid.Row="1" Grid.Column="1" />
+        </Grid>
     </Grid>
 </Window>

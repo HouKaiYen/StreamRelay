@@ -30,6 +30,8 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        PortableSettingsPathBox.Text = RelaySettings.SettingsPath;
+        BootSettingsPathBox.Text = BootStartup.ConfigurationPath;
         UsernameBox.Text = RelaySettings.DefaultCredential;
         PasswordBox.Password = RelaySettings.DefaultCredential;
         Forms.ContextMenuStrip menu = new();

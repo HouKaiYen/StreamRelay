@@ -17,8 +17,12 @@ internal static class BootStartup
 {
     public const string EnableArgument = "--enable-boot-startup";
     public const string DisableArgument = "--disable-boot-startup";
+    public const string TrayLoginArgument = "--tray";
 
     private const string TaskName = "StreamRelay";
+    private const string LoginRunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    private const string TrayLoginName = "StreamRelayTray";
+    private const int MaxRunCommandLength = 260;
     // 此雜湊對應 Publish-Portable.ps1 指定版本的官方 mediamtx.exe。
     private const string EngineHash = "18EA5E8DDBE561C99262679ACD03FAAB4A284713BDA6E8A21319FC1B57F9765E";
     private const int FileNotFound = unchecked((int)0x80070002);
@@ -294,8 +298,7 @@ internal static class BootStartup
     {
         try
         {
-            using RegistryKey? key = Registry.CurrentUser.OpenSubKey(
-                @"Software\Microsoft\Windows\CurrentVersion\Run", writable: true);
+            using RegistryKey? key = Registry.CurrentUser.OpenSubKey(LoginRunKey, writable: true);
             if (key?.GetValue(TaskName) is string command
                 && command.EndsWith("StreamRelay.exe\" --startup", StringComparison.OrdinalIgnoreCase))
             {
@@ -305,6 +308,32 @@ internal static class BootStartup
         catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException or IOException)
         {
             // 舊版登入項目可能受 Windows 帳戶原則管理。
+        }
+    }
+
+    public static bool TrySetTrayLoginEntry(bool enabled)
+    {
+        try
+        {
+            if (!enabled)
+            {
+                using RegistryKey? login = Registry.CurrentUser.OpenSubKey(LoginRunKey, writable: true);
+                login?.DeleteValue(TrayLoginName, throwOnMissingValue: false);
+                return true;
+            }
+
+            string command = $"\"{Environment.ProcessPath}\" {TrayLoginArgument}";
+            if (command.Length > MaxRunCommandLength)
+                return false;
+
+            using RegistryKey key = Registry.CurrentUser.CreateSubKey(LoginRunKey);
+            if (key.GetValue(TrayLoginName) is not string current || current != command)
+                key.SetValue(TrayLoginName, command, RegistryValueKind.String);
+            return true;
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException or IOException)
+        {
+            return false;
         }
     }
 }

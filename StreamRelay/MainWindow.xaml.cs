@@ -56,7 +56,7 @@ public partial class MainWindow : Window
             ContextMenuStrip = menu,
             Visible = true,
         };
-        _tray.DoubleClick += (_, _) => ShowFromTray();
+        _tray.MouseClick += OnTrayMouseClick;
 
         try
         {
@@ -102,6 +102,18 @@ public partial class MainWindow : Window
         Activate();
     }
 
+    private void OnTrayMouseClick(object? sender, Forms.MouseEventArgs e)
+    {
+        if (e.Button == Forms.MouseButtons.Left)
+            ShowFromTray();
+    }
+
+    internal void SyncTrayLoginEntry()
+    {
+        if (_canReadBootTask && !BootStartup.TrySetTrayLoginEntry(_isBootEnabled))
+            Status.Text += " 無法更新 Windows 登入後的系統匣啟動項目。";
+    }
+
     private void OnStateChanged(object? sender, EventArgs e)
     {
         if (WindowState == WindowState.Minimized)
@@ -134,6 +146,7 @@ public partial class MainWindow : Window
             await BootStartup.SetEnabledAsync(enabled);
             _isBootEnabled = enabled;
             Status.Text = enabled ? "已建立開機排程，下次開機時會自動轉發。" : "已停用開機自啟動。";
+            SyncTrayLoginEntry();
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
         {
